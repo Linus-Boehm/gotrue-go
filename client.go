@@ -2,6 +2,7 @@ package gotrue_go
 
 import (
 	"fmt"
+	"github.com/Linus-Boehm/gotrue-go/schema"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -29,9 +30,14 @@ func (c Client) PrepareRequest() *resty.Request {
 	return c.resty.
 		R().
 		SetHeader("Accept", "application/json").
-		SetAuthToken(c.serviceToken)
+		SetAuthToken(c.serviceToken).
+		SetError(&schema.APIError{})
 }
 
 func (c Client) GetRequest(request *resty.Request, path string) (*resty.Response, error) {
 	return request.Get(fmt.Sprintf("%s%s", c.instanceUrl, path))
+}
+
+func (c Client) PostRequest(request *resty.Request, path string) (*resty.Response, error) {
+	return request.Post(fmt.Sprintf("%s%s", c.instanceUrl, path))
 }

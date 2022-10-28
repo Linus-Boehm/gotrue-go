@@ -1,64 +1,72 @@
 package gotrue_go
 
 import (
-	jwt "github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
-type AMREntry struct {
-	Method    string `json:"method"`
-	Timestamp int64  `json:"timestamp"`
+func TestAdminUsersApi_CreateUser_HappyPath(t *testing.T) {
+	c := NewTestAdminClient(t)
+	updateUser := mockUpdateAdminUser()
+
+	user, apiError, err := c.AdminUsersApi.CreateUser(updateUser)
+
+	assert.NoError(t, err)
+	assert.NoError(t, apiError)
+	assert.Equal(t, updateUser.Email, user.Email)
+	assert.Equal(t, updateUser.Role, user.Role)
+	assert.Equal(t, updateUser.Aud, user.Aud)
 }
 
-type GoTrueClaims struct {
-	jwt.StandardClaims
-	Email                         string                 `json:"email"`
-	Phone                         string                 `json:"phone"`
-	AppMetaData                   map[string]interface{} `json:"app_metadata"`
-	UserMetaData                  map[string]interface{} `json:"user_metadata"`
-	Role                          string                 `json:"role"`
-	AuthenticatorAssuranceLevel   string                 `json:"aal,omitempty"`
-	AuthenticationMethodReference []AMREntry             `json:"amr,omitempty"`
-	SessionId                     string                 `json:"session_id,omitempty"`
+func TestAdminUsersApi_CreateUser_UniqueEMail(t *testing.T) {
+	c := NewTestAdminClient(t)
+	updateUser := mockUpdateAdminUser()
+
+	_, apiError, err := c.AdminUsersApi.CreateUser(updateUser)
+	_, apiError2, err2 := c.AdminUsersApi.CreateUser(updateUser)
+
+	assert.NoError(t, err)
+	assert.Nil(t, apiError)
+	assert.NoError(t, err2)
+	assert.Equal(t, 422, apiError2.StatusCode)
+	assert.Equal(t, "Email address already registered by another user", apiError2.Error())
 }
 
-func NewTestClient(t *testing.T) *Client {
-	claims := &GoTrueClaims{
-		Role: "supabase_admin",
-	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("testsecret"))
-	if err != nil {
-		assert.NoError(t, err)
-	}
-	return NewClient(token, "http://localhost:9999")
+func TestAdminUsersApi_CreateUser_WrongCredentials(t *testing.T) {
+	c := NewUnauthenticatedTestClient(t)
+	updateUser := mockUpdateAdminUser()
+
+	_, apiError, err := c.AdminUsersApi.CreateUser(updateUser)
+	assert.NoError(t, err)
+	assert.Equal(t, 401, apiError.StatusCode)
+	assert.Equal(t, "Invalid token: signature is invalid", apiError.Error())
 }
 
 func TestAdminUsersApi_GetUsers(t *testing.T) {
+	c := NewTestServiceRoleClient(t)
+	updateUser := mockUpdateAdminUser()
 
-	tests := []struct {
-		name    string
-		want    []User
-		wantErr bool
-	}{
-		{
-			name:    "happy path",
-			want:    nil,
-			wantErr: false,
-		},
+	wantUser, apiError, err := c.AdminUsersApi.CreateUser(updateUser)
+	assert.NoError(t, err)
+	assert.Nil(t, apiError)
+
+	response, apiError2, err2 := c.AdminUsersApi.ListUsers()
+	assert.NoError(t, err2)
+	assert.Nil(t, apiError2)
+
+	assert.NotNil(t, response)
+	assert.GreaterOrEqual(t, len(response.Users), 1)
+	found := false
+	for _, user := range response.Users {
+		if user.ID.String() != wantUser.ID.String() {
+			continue
+		}
+		found = true
+		assert.Equal(t, wantUser.Email, user.Email)
+		assert.Equal(t, wantUser.Role, user.Role)
+		assert.Equal(t, wantUser.Aud, user.Aud)
+		assert.Equal(t, wantUser.UserMetaData, user.UserMetaData)
+		assert.Equal(t, wantUser.Phone, user.Phone)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := NewTestClient(t)
-			got, err := c.AdminUsersApi.GetUser()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetUsers() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetUsers() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	assert.True(t, found)
 }

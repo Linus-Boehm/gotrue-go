@@ -10,6 +10,8 @@ require (
 )
 
 require (
+	github.com/bradenaw/juniper v0.8.0 // indirect
+	github.com/brianvoe/gofakeit/v6 v6.19.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.1.0 // indirect

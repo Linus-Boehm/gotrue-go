@@ -1,62 +1,67 @@
 package gotrue_go
 
 import (
-	"fmt"
-	"github.com/gofrs/uuid"
-	"time"
+	"github.com/Linus-Boehm/gotrue-go/schema"
+	"github.com/go-resty/resty/v2"
 )
 
-type User struct {
-	ID uuid.UUID `json:"id"`
-
-	Aud   string `json:"aud"`
-	Role  string `json:"role"`
-	Email string `json:"email"`
-
-	EmailConfirmedAt *time.Time `json:"email_confirmed_at,omitempty"`
-	InvitedAt        *time.Time `json:"invited_at,omitempty"`
-
-	Phone            string     `json:"phone"`
-	PhoneConfirmedAt *time.Time `json:"phone_confirmed_at,omitempty"`
-
-	ConfirmationSentAt *time.Time `json:"confirmation_sent_at,omitempty"`
-
-	// For backward compatibility only. Use EmailConfirmedAt or PhoneConfirmedAt instead.
-	ConfirmedAt *time.Time `json:"confirmed_at,omitempty"`
-
-	RecoverySentAt *time.Time `json:"recovery_sent_at,omitempty"`
-
-	EmailChange       string     `json:"new_email,omitempty"`
-	EmailChangeSentAt *time.Time `json:"email_change_sent_at,omitempty"`
-
-	PhoneChange       string     `json:"new_phone,omitempty"`
-	PhoneChangeSentAt *time.Time `json:"phone_change_sent_at,omitempty"`
-
-	ReauthenticationSentAt *time.Time `json:"reauthentication_sent_at,omitempty"`
-
-	LastSignInAt *time.Time `json:"last_sign_in_at,omitempty"`
-
-	AppMetaData  map[string]interface{} `json:"app_metadata"`
+type UpdateAdminUser struct {
+	Aud          string                 `json:"aud"`
+	Role         string                 `json:"role"`
+	Email        string                 `json:"email"`
+	Phone        string                 `json:"phone"`
+	Password     *string                `json:"password"`
+	EmailConfirm bool                   `json:"email_confirm"`
+	PhoneConfirm bool                   `json:"phone_confirm"`
 	UserMetaData map[string]interface{} `json:"user_metadata"`
-
-	Factors    map[string]interface{} `json:"factors,omitempty"`
-	Identities map[string]interface{} `json:"identities"`
-
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	BannedUntil *time.Time `json:"banned_until,omitempty"`
+	AppMetaData  map[string]interface{} `json:"app_metadata"`
+	BanDuration  string                 `json:"ban_duration"`
 }
 
 type AdminUsersApi struct {
 	client *Client
 }
 
-func (a AdminUsersApi) GetUser() ([]User, error) {
+func (a AdminUsersApi) ListUsers() (*schema.ListUserResponse, *schema.APIError, error) {
 	r := a.client.PrepareRequest()
+	r.SetResult(schema.ListUserResponse{})
 
 	response, err := a.client.GetRequest(r, "/admin/users")
-	fmt.Println(response)
+	if err != nil {
+		return nil, nil, err
+	}
+	listUserResponse, apiError := parseResult[schema.ListUserResponse](response)
 
-	return nil, err
+	return listUserResponse, apiError, nil
+}
 
+func (a AdminUsersApi) CreateUser(updateUser UpdateAdminUser) (*schema.User, *schema.APIError, error) {
+	r := a.client.PrepareRequest()
+
+	r.SetResult(schema.User{})
+	r.SetBody(updateUser)
+
+	response, err := a.client.PostRequest(r, "/admin/users")
+	if err != nil {
+		return nil, nil, err
+	}
+	user, apiError := parseResult[schema.User](response)
+
+	return user, apiError, nil
+}
+
+func parseResult[T any](r *resty.Response) (*T, *schema.APIError) {
+	var apiError *schema.APIError
+	err := r.Error()
+	if err != nil {
+		apiError = err.(*schema.APIError)
+	}
+
+	result := r.Result()
+	var resultT *T
+	if result != nil {
+		resultT = result.(*T)
+	}
+
+	return resultT, apiError
 }
