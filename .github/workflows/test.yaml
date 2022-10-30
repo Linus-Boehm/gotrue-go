@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags: ['*']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          skip-unshallow: "true"
+      - name: Build the stack
+        run: docker-compose up -d
+      - name: Wait for API
+        run: docker run --network container:gotrue appropriate/curl -s --retry 10 --retry-connrefused http://localhost:9999/
+      - name: Test
+        run: make test

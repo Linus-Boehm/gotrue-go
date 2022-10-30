@@ -49,6 +49,7 @@ services:
       - '1100:1100' # POP3
   db:
     image: supabase/postgres:14.1.0
+    container_name: gotrue
     ports:
       - '5432:5432'
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
