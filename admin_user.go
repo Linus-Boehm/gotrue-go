@@ -3,6 +3,7 @@ package gotrue_go
 import (
 	"github.com/Linus-Boehm/gotrue-go/schema"
 	"github.com/go-resty/resty/v2"
+	"github.com/gofrs/uuid"
 )
 
 type UpdateAdminUser struct {
@@ -42,6 +43,21 @@ func (a AdminUsersApi) CreateUser(updateUser UpdateAdminUser) (*schema.User, *sc
 	r.SetBody(updateUser)
 
 	response, err := a.client.PostRequest(r, "/admin/users")
+	if err != nil {
+		return nil, nil, err
+	}
+	user, apiError := parseResult[schema.User](response)
+
+	return user, apiError, nil
+}
+
+func (a AdminUsersApi) UpdateUserByID(id uuid.UUID, updateUser UpdateAdminUser) (*schema.User, *schema.APIError, error) {
+	r := a.client.PrepareRequest()
+
+	r.SetResult(schema.User{})
+	r.SetBody(updateUser)
+
+	response, err := a.client.PutRequestWithParam(r, "/admin/users", id)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -41,3 +41,11 @@ func (c Client) GetRequest(request *resty.Request, path string) (*resty.Response
 func (c Client) PostRequest(request *resty.Request, path string) (*resty.Response, error) {
 	return request.Post(fmt.Sprintf("%s%s", c.instanceUrl, path))
 }
+
+func (c Client) PutRequest(request *resty.Request, path string) (*resty.Response, error) {
+	return request.Put(fmt.Sprintf("%s%s", c.instanceUrl, path))
+}
+
+func (c Client) PutRequestWithParam(request *resty.Request, path string, param fmt.Stringer) (*resty.Response, error) {
+	return request.Put(fmt.Sprintf("%s%s/%s", c.instanceUrl, path, param.String()))
+}

@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type GoTrueIdentity map[string]interface{}
+
 type User struct {
 	ID uuid.UUID `json:"id"`
 
@@ -39,7 +41,7 @@ type User struct {
 	UserMetaData map[string]interface{} `json:"user_metadata"`
 
 	Factors    map[string]interface{} `json:"factors,omitempty"`
-	Identities map[string]interface{} `json:"identities"`
+	Identities *[]GoTrueIdentity      `json:"identities,omitempty"`
 
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
