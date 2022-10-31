@@ -1,0 +1,28 @@
+name: Build and Release on Push to Master
+
+on:
+  workflow_dispatch:
+
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+    branches:
+      - main
+
+jobs:
+  release:
+    outputs:
+      status: ${{ steps.semantic.outputs.new_release_published }}
+      version: ${{ steps.semantic.outputs.new_release_version }}
+
+    runs-on: ubuntu-20.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Release on GitHub
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v3
+        with:
+          semantic_version: 19
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
