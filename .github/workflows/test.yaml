@@ -24,8 +24,8 @@ jobs:
         run: docker-compose up -d --build
       - name: docker ps
         run: docker ps
-      - name: Test
-        run: docker run --network container:gotrue appropriate/curl -s --retry 10 --retry-connrefused http://localhost:9999/
+      - name: Test connection
+        run: docker run --network container:gotrue appropriate/curl -s --retry 10 --retry-connrefused http://localhost:9999/settings
       - name: Test
         run: make test
       - name: Stop containers
