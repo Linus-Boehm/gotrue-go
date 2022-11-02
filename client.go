@@ -31,6 +31,7 @@ func (c Client) PrepareRequest() *resty.Request {
 		R().
 		SetHeader("Accept", "application/json").
 		SetAuthToken(c.serviceToken).
+		SetHeader("apiKey", c.serviceToken).
 		SetError(&schema.APIError{})
 }
 
