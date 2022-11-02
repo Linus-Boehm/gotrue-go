@@ -2,6 +2,7 @@
 
 Gotrue Go API client for [supabase/gotrue](https://github.com/supabase/gotrue)
 
+Minimum go version: `1.19`
 
 ## Supported endpoints
 
